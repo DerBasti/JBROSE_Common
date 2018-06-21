@@ -2,9 +2,10 @@
 #include "ROSEMessageHandler.h"
 #include <iostream>
 
-ROSEClient::ROSEClient(NetworkClient* networkInterface) {
+ROSEClient::ROSEClient(NetworkClient* networkInterface, std::function<std::shared_ptr<PacketFactory>()> packetFactoryCreator) {
 	this->networkInterface = networkInterface;
-	messageHandlerForIncomingData = std::unique_ptr<NetworkMessageHandler>(new ROSEMessageHandler());
+	std::shared_ptr<PacketFactory> factory = packetFactoryCreator();
+	messageHandlerForIncomingData = std::unique_ptr<NetworkMessageHandler>(new ROSEMessageHandler(factory));
 }
 
 
@@ -57,7 +58,7 @@ bool ROSEClient::sendData(const ResponsePacket& packet) const {
 	const char* encryptedPacket = (const char*)packetAsPointer;
 
 	unsigned long actualLength = sendablePacket.getCurrentSize();
-	std::cout << "Sending packet " << packet.toPrintable().c_str() << "\n";
+	std::cout << "Sending packet (" << actualLength << " bytes) " << packet.toPrintable().c_str() << "\n";
 	bool successfullySent = getNetworkInterface()->send(encryptedPacket, actualLength);
 	return successfullySent;
 }

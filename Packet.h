@@ -1,3 +1,5 @@
+#ifndef __ROSE_PACKET__
+#define __ROSE_PACKET__
 #pragma once
 #include <memory>
 #include <string>
@@ -38,13 +40,21 @@ public:
 		caret += sizeOfT;
 	}
 
+	void addString(const std::string& str) {
+		addString(str.c_str(), static_cast<uint16_t>(str.length()));
+	}
+
 	void addString(const char *str) {
-		uint8_t *buffer = sharedBuffer.get();
 		unsigned short stringLength = str != nullptr ? static_cast<unsigned short>(strlen(str)) : 0;
+		addString(str, stringLength);
+	}
+
+	void addString(const char* str, uint16_t stringLength) {
+		uint8_t *buffer = sharedBuffer.get();
 		memcpy(&buffer[caret], str, stringLength);
 		caret += stringLength;
 
-		addData<uint8_t>(0x00); //Null-Terminator
+		addData<uint8_t>(0x00);
 	}
 
 	__inline void updatePacketSize() const {
@@ -121,8 +131,16 @@ protected:
 
 	}
 public:
+	ResponsePacket(const uint16_t commandId) : ResponsePacket(commandId, 0x06) {
+	
+	}
 	ResponsePacket(const uint16_t commandId, const uint16_t len) : Packet(commandId, len) {
+
+	}
+	virtual ~ResponsePacket() {
 
 	}
 	SendablePacket toSendable() const;
 };
+
+#endif //__ROSE_PACKET__

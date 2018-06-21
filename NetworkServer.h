@@ -55,6 +55,9 @@ private:
 	}
 protected:
 	void disconnectClient(NetworkClient* nc);
+	virtual void onServerStartup() {
+
+	}
 	virtual void onNewClient(NetworkClient* nc) {
 	}
 

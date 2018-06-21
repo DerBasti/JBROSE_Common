@@ -1,16 +1,29 @@
 #include "ROSEServer.h"
 #include "ROSEMessageHandler.h"
 #include "PacketFactory.h"
+#include "MySQLDatabase.h"
+#include "PostgresDatabase.h"
 
 std::shared_ptr<CryptTable> ROSEServer::ENCRYPTION_TABLE;
+ROSEServer* ROSEServer::instance;
 
 ROSEServer::ROSEServer(uint16_t port) : NetworkServer(port) {
-	PacketFactory::init();
+	instance = this;
+
+	srand(static_cast<uint32_t>(time(nullptr)));
+
+	DatabaseConnectionInformation info;
+	info.setPort(5432);
+	info.setUserName("postgres");
+	info.setPassword("Bla12345!");
+	info.setDatabaseName("rose_online");
+	database = new PostgresDatabase(info);
 }
 
 
 ROSEServer::~ROSEServer()
 {
+	delete database;
 }
 
 void ROSEServer::loadEncryption() {
@@ -18,8 +31,8 @@ void ROSEServer::loadEncryption() {
 	ENCRYPTION_TABLE->generateCryptTables();
 }
 
-ROSEClient* ROSEServer::findROSEClientByInterface(NetworkClient* client) {
-	ROSEClient* result = nullptr;
+std::shared_ptr<ROSEClient> ROSEServer::findROSEClientByInterface(NetworkClient* client) {
+	std::shared_ptr<ROSEClient> result;
 	auto iterator = clientList.find(client);
 	if (iterator != clientList.cend()) {
 		result = (*iterator).second;
@@ -28,36 +41,34 @@ ROSEClient* ROSEServer::findROSEClientByInterface(NetworkClient* client) {
 }
 
 void ROSEServer::onNewClient(NetworkClient* nc) {
-	ROSEClient* client = new ROSEClient(nc);
+	auto client = std::shared_ptr<ROSEClient>(new ROSEClient(nc, packetFactoryCreatorFunction));
 	onNewROSEClient(client);
 	clientList.insert(make_pair(nc, client));
 }
 
-void ROSEServer::onNewROSEClient(ROSEClient* roseClient) {
+void ROSEServer::onNewROSEClient(std::shared_ptr<ROSEClient>& roseClient) {
 
 }
 
 void ROSEServer::onClientDisconnecting(NetworkClient* nc) {
-	ROSEClient* client = findROSEClientByInterface(nc);
+	auto client = findROSEClientByInterface(nc);
 	if (client != nullptr) {
 		onROSEClientDisconnecting(client);
 		clientList.erase(nc);
-		delete client;
 	}
-	client = nullptr;
 }
 
-void ROSEServer::onROSEClientDisconnecting(ROSEClient* client) {
+void ROSEServer::onROSEClientDisconnecting(std::shared_ptr<ROSEClient>& client) {
 	//TODO
 }
 
-bool ROSEServer::onPacketsReady(ROSEClient* client, std::queue<std::shared_ptr<Packet>>& packetQueue) {
+bool ROSEServer::onPacketsReady(std::shared_ptr<ROSEClient>& client, std::queue<std::shared_ptr<Packet>>& packetQueue) {
 	return true;
 }
 
 void ROSEServer::onPrepareDataIncoming(NetworkClient* nc) {
-	ROSEClient* client = findROSEClientByInterface(nc);
-	if (client != nullptr) {
+	std::shared_ptr<ROSEClient> client = findROSEClientByInterface(nc);
+	if (client) {
 		ROSEMessageHandler *handler = dynamic_cast<ROSEMessageHandler*>(client->getMessageHandler());
 		uint16_t expectedAmountOfBytes = handler->getExpectedAmountOfBytes();
 		std::cout << "Setting the expected amount of bytes to: " << expectedAmountOfBytes << "\n";
@@ -66,8 +77,8 @@ void ROSEServer::onPrepareDataIncoming(NetworkClient* nc) {
 }
 
 void ROSEServer::onDataReceived(NetworkClient* nc, const NetworkMessageFragment& dataHolder) {
-	ROSEClient* client = findROSEClientByInterface(nc);
-	if (client != nullptr) {
+	std::shared_ptr<ROSEClient> client = findROSEClientByInterface(nc);
+	if (client) {
 		bool messageSuccessfullyHandled = client->handleIncomingDataFragment(dataHolder);
 		bool packetSuccessfullyHandled = true;
 		if (messageSuccessfullyHandled && client->isPacketQueueFilled()) {

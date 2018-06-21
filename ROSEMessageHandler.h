@@ -1,19 +1,21 @@
 #pragma once
 #include "NetworkMessageHandler.h"
 #include "Trackable.h"
+#include "PacketFactory.h"
 #include "EncryptionHandler.h"
 #include "Packet.h"
 
 class ROSEMessageHandler : public NetworkMessageHandler
 {
 private:
+	std::shared_ptr<PacketFactory> packetFactory;
 	EncryptionHandler *encryptionHandler;
 	uint16_t expectedAmountOfBytes;
 	TrackableAppender<char> dataHolder;
 	bool handlingFinished;
 	bool headerReceived;
 public:
-	ROSEMessageHandler();
+	ROSEMessageHandler(std::shared_ptr<PacketFactory>& packetFactory);
 	~ROSEMessageHandler();
 
 	virtual void accept(const NetworkMessageFragment& fragment); 

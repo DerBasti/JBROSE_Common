@@ -3,11 +3,11 @@
 #include "NetworkClient.h"
 #include "NetworkMessageHandler.h"
 #include "Packet.h"
+#include "PacketFactory.h"
 
 class ROSEClient
 {
 private:
-
 	void onEncryptionOfPacket(const std::string& packetToPrintable, const SendablePacket& packet) const;
 protected:
 	const static uint16_t DEFAULT_HEADERSIZE = 6;
@@ -18,7 +18,7 @@ protected:
 	
 	__inline NetworkClient* getNetworkInterface() const {
 		return networkInterface;
-	} 
+	}
 
 	void threadSafeAppendingOfPacketToQueue(std::shared_ptr<Packet>& packet) {
 		std::lock_guard<std::mutex> mutexLock(packetQueueMutex);
@@ -26,7 +26,7 @@ protected:
 	}
 	void resetToDefaultState();
 public:
-	ROSEClient(NetworkClient* networkInterface);
+	ROSEClient(NetworkClient* networkInterface, std::function<std::shared_ptr<PacketFactory>()> packetFactoryCreator);
 	virtual ~ROSEClient();
 
 	bool handleIncomingDataFragment(const NetworkMessageFragment& data);

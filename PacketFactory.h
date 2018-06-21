@@ -7,11 +7,18 @@
 class PacketFactory
 {
 private:
-	PacketFactory();
-	static std::unordered_map<uint16_t, std::function<std::shared_ptr<Packet>(const Packet&)> > commandToPacketSupplierMap;
-public:
-	~PacketFactory();
-	static void init();
-	static std::shared_ptr<Packet> createPacketFromReceivedData(const char *dataPacket);
-};
+	std::unordered_map<uint16_t, std::function<std::shared_ptr<Packet>(const Packet&)> > commandToPacketSupplierMap;
+protected:
 
+	template<class T, typename = std::enable_if<std::is_base_of<Packet, T>::value>::type>
+	__inline void addCommand(uint16_t command) {
+		commandToPacketSupplierMap.insert(std::make_pair(command, [](const Packet& p) {
+			return std::shared_ptr<Packet>(new T(&p));
+		}));
+	}
+
+public:
+	PacketFactory();
+	~PacketFactory();
+	std::shared_ptr<Packet> createPacketFromReceivedData(const char *dataPacket);
+};
