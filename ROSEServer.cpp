@@ -71,7 +71,7 @@ void ROSEServer::onPrepareDataIncoming(NetworkClient* nc) {
 	if (client) {
 		ROSEMessageHandler *handler = dynamic_cast<ROSEMessageHandler*>(client->getMessageHandler());
 		uint16_t expectedAmountOfBytes = handler->getExpectedAmountOfBytes();
-		std::cout << "Setting the expected amount of bytes to: " << expectedAmountOfBytes << "\n";
+		//std::cout << "Setting the expected amount of bytes to: " << expectedAmountOfBytes << "\n";
 		nc->setMaxAllowedBytesToReceive(expectedAmountOfBytes);
 	}
 }
