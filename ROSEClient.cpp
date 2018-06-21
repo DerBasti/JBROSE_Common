@@ -15,10 +15,10 @@ ROSEClient::~ROSEClient()
 }
 
 bool ROSEClient::handleIncomingDataFragment(const NetworkMessageFragment& data) {
-	std::cout << "Incoming data of size: " << data.getLength() << "\n";
+	//std::cout << "Incoming data of size: " << data.getLength() << "\n";
 	messageHandlerForIncomingData->accept(data);
 	if (messageHandlerForIncomingData->isHandlingFinished()) {
-		std::cout << "Handling is finished. Creating packet from data...\n";
+		//std::cout << "Handling is finished. Creating packet from data...\n";
 		ROSEMessageHandler *roseMessageHandler = dynamic_cast<ROSEMessageHandler*>(messageHandlerForIncomingData.get());
 		std::shared_ptr<Packet> packet = roseMessageHandler->createPacketFromReceivedData();
 		if (!packet) {
@@ -32,7 +32,7 @@ bool ROSEClient::handleIncomingDataFragment(const NetworkMessageFragment& data) 
 }
 
 void ROSEClient::resetToDefaultState() {
-	std::cout << "Resetting to default state...\n";
+	//std::cout << "Resetting to default state...\n";
 	ROSEMessageHandler *roseMessageHandler = dynamic_cast<ROSEMessageHandler*>(messageHandlerForIncomingData.get());
 	roseMessageHandler->reset();
 	getNetworkInterface()->setMaxAllowedBytesToReceive(roseMessageHandler->getExpectedAmountOfBytes());
@@ -58,7 +58,7 @@ bool ROSEClient::sendData(const ResponsePacket& packet) const {
 	const char* encryptedPacket = (const char*)packetAsPointer;
 
 	unsigned long actualLength = sendablePacket.getCurrentSize();
-	std::cout << "Sending packet (" << actualLength << " bytes) " << packet.toPrintable().c_str() << "\n";
+	//std::cout << "Sending packet (" << actualLength << " bytes) " << packet.toPrintable().c_str() << "\n";
 	bool successfullySent = getNetworkInterface()->send(encryptedPacket, actualLength);
 	return successfullySent;
 }
