@@ -3,6 +3,7 @@
 #pragma once
 
 #include <windows.h>
+#include <vector>
 #include <string>
 
 class DirectoryParser {
@@ -51,7 +52,17 @@ public:
 	bool isDirectoryExistent() const {
 		WIN32_FIND_DATAA fileData = { 0x00 };
 		HANDLE handle = FindFirstFileA((path + std::string("*")).c_str(), &fileData);
-		bool success = handle != INVALID_HANDLE_VALUE;
+		bool success = handle != INVALID_HANDLE_VALUE && ((fileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0);
+		if (success) {
+			FindClose(handle);
+		}
+		return success;
+	}
+
+	static bool isFileExistent(const char* path) {
+		WIN32_FIND_DATAA fileData = { 0x00 };
+		HANDLE handle = FindFirstFileA(path, &fileData);
+		bool success = handle != INVALID_HANDLE_VALUE && ((fileData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) == 0);
 		if (success) {
 			FindClose(handle);
 		}
