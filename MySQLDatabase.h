@@ -17,7 +17,8 @@ private:
 		MYSQL_ROW row;
 		while ((row = mysql_fetch_row(res)) != nullptr) {
 			ResultRow resultRow = ResultRow((const char**)row, mysql_field_count(&handle));
-			resultRow.setColumnNames(resultSet->getColumnNames());
+			auto columns = resultSet->getColumnNames();
+			resultRow.setColumnNames(columns);
 			resultSet->addToResult(resultRow);
 		}
 	}
@@ -79,8 +80,8 @@ public:
 		if (query == nullptr) {
 			return false;
 		}
-		const size_t insertLen = 7;
-		const size_t queryLen = strlen(query);
+		const uint32_t insertLen = 7;
+		const uint32_t queryLen = static_cast<uint32_t>(strlen(query));
 		if (queryLen <= insertLen) {
 			return false;
 		}

@@ -16,6 +16,6 @@ std::shared_ptr<Packet> PacketFactory::createPacketFromReceivedData(const char *
 		std::function<std::shared_ptr<Packet>(const Packet&)> packetCreatorFunction = (*iterator).second;
 		return packetCreatorFunction(packet);
 	}
-	std::cout << "Packet with ID 0x" << std::hex << packet.getCommandId() << std::dec << " not found!\n";
+	logger.logError("Packet with ID ", packet.getCommandIdAsHex(), " not found!");
 	return std::shared_ptr<Packet>();
 }

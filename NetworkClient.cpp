@@ -1,5 +1,6 @@
 #include "NetworkClient.h"
 #include "Ws2tcpip.h"
+#include <iostream>
 
 NetworkClient::NetworkClient(SOCKET socket) {
 	this->socket = socket;
@@ -22,6 +23,7 @@ void NetworkClient::setIp(const sockaddr_in* addr) {
 	ip = std::shared_ptr<char>(new char[length + 1], std::default_delete<char[]>());
 	strncpy_s(ip.get(), length+1, buffer, length);
 	ip.get()[length] = 0x00;
+	logger.logTrace("Setting client ip to '", ip.get(), "'");
 }
 
 NetworkMessageFragment NetworkClient::receiveData() {

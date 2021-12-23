@@ -1,5 +1,6 @@
 #pragma once
 #include "NetworkServer.h"
+#include "Logger.h"
 #include "ROSEClient.h"
 #include "EncryptionHandler.h"
 #include "PacketFactory.h"
@@ -22,6 +23,7 @@ private:
 protected:
 	static std::shared_ptr<CryptTable> ENCRYPTION_TABLE;
 	Database *database;
+	ROSELogger logger;
 
 	virtual void loadEncryption();
 

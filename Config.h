@@ -34,14 +34,26 @@ public:
 		return keyValueStorage.at(key);
 	}
 
-	template<class _T = int32_t, class = std::enable_if<std::is_integral<_T>::value>::type>
+	template<class _T = int32_t, class = typename std::enable_if<std::is_integral<_T>::value>::type>
 	__inline _T getValueAsInt(const char* key) const {
 		return static_cast<_T>(atoll(getValue(key).c_str()));
 	}
 
-	template<class _T = float, class = std::enable_if<std::is_floating_point<_T>::value>::type>
+	__inline void printKeyValue(const char* key) {
+		if (!isKeyExisting(key)) {
+			return;
+		}
+		auto value = getValue(key);
+		std::cout << "[" << key << "]: " << value.c_str() << "\n";
+	}
+
+	template<class _T = float, class = typename std::enable_if<std::is_floating_point<_T>::value>::type>
 	__inline _T getValueAsFloatingPoint(const char* key) const {
 		return static_cast<_T>(atof(getValue(key).c_str()));
+	}
+
+	__inline bool getValueAsBoolean(const char* key) const {
+		return _stricmp(getValue(key).c_str(), "true") == 0;
 	}
 
 	__inline bool isKeyExisting(const char* key) const {

@@ -5,12 +5,16 @@ template<class T>
 struct is_character_based : std::false_type {};
 
 template<>
-struct is_character_based<char> : std::true_type {};
+struct is_character_based<char> : std::true_type {
+	using type = void;
+};
 
 template<>
-struct is_character_based<wchar_t> : std::true_type {};
+struct is_character_based<wchar_t> : std::true_type {
+	using type = void;
+};
 
-template<class T, class = typename std::enable_if<is_character_based<std::remove_cv<std::remove_pointer<T>::type>::type>::value>::type>
+template<class T, class = typename std::enable_if<is_character_based<std::remove_cv_t<std::remove_const_t<T>>>::value>::type>
 class Trackable
 {
 protected:
@@ -46,14 +50,14 @@ public:
 	}
 };
 
-template<class T, class X = typename std::enable_if<is_character_based<std::remove_cv<std::remove_pointer<T>::type>::type>::value>::type>
-class TrackableAppender : public Trackable<T, X> {
+template<class T, class = typename std::enable_if<is_character_based<std::remove_cv_t<std::remove_const_t<T>>>::value>::type>
+class TrackableAppender : public Trackable<T> {
 private:
 	unsigned long caret;
 public:
 	TrackableAppender() : TrackableAppender(0x400) {}
 
-	TrackableAppender(unsigned long size) : Trackable<T, X>(size) {
+	TrackableAppender(unsigned long size) : Trackable<T>(size) {
 		caret = 0;
 	}
 	virtual ~TrackableAppender() {
@@ -61,7 +65,7 @@ public:
 	}
 
 	void add(const T& value) {
-		dataHolder[caret] = value;
+		Trackable<T>::dataHolder[caret] = value;
 		caret++;
 	}
 
@@ -76,7 +80,7 @@ public:
 	}
 
 	__inline void reset() {
-		memset(dataHolder, 0x00, sizeof(T)*getCapacity());
+		memset(Trackable<T>::dataHolder, 0x00, sizeof(T)*Trackable<T>::getCapacity());
 		caret = 0;
 	}
 };

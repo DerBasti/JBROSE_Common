@@ -21,7 +21,7 @@ Config::~Config() {
 void Config::parseConfigFile(FILE *file) {
 	std::vector<std::string> lines = parseConfigFileLines(file);
 	std::for_each(lines.begin(), lines.end(), [&](std::string line) {
-		int equalIndex = line.find('=');
+		int64_t equalIndex = line.find('=');
 		if (equalIndex != -1 && line.find('=', equalIndex + 1) == -1) {
 			std::string key = line.substr(0, equalIndex);
 			std::string value = line.substr(equalIndex + 1);
@@ -39,7 +39,7 @@ std::vector<std::string> Config::parseConfigFileLines(FILE* file) {
 			continue;
 		}
 		if (currentChar == '\n') {
-			if (currentLine.length() > 0 && currentLine.at(0) != '#') {
+			if (!currentLine.empty() && currentLine.at(0) != '#') {
 				lines.push_back(currentLine);
 			}
 			currentLine.clear();

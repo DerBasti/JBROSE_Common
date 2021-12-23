@@ -7,6 +7,7 @@
 #include <vector>
 #include <functional>
 #include <map>
+#include "Logger.h"
 
 class DatabaseConnectionInformation {
 private:
@@ -86,8 +87,12 @@ public:
 		return atoi(getColumnData(columnId).c_str());
 	}
 
-	__inline std::shared_ptr<const char*> getColumnNames() const {
-		return columnNames;
+	__inline int64_t getColumnDataAsLong(const uint16_t columnId) const {
+		return _atoi64(getColumnData(columnId).c_str());
+	}
+
+	__inline const char** getColumnNames() const {
+		return columnNames.get();
 	}
 
 	__inline void setColumnNames(std::shared_ptr<const char*>& columns) {
@@ -106,14 +111,21 @@ private:
 	uint16_t columnAmount;
 	uint32_t rowAmount;
 	uint32_t rowIndexForAdding;
+protected:
+	ResultSet() : ResultSet(0) {
+	}
 public:
 	ResultSet(uint32_t rowAmount) {
 		this->rowAmount = rowAmount;
 		resultRows = new ResultRow[rowAmount + 1];
+		rowIndexForAdding = 0;
+		columnAmount = 0;
 	}
 
 	virtual ~ResultSet() {
 		rowAmount = 0;
+		rowIndexForAdding = 0;
+		columnAmount = 0;
 
 		delete[] resultRows;
 		resultRows = nullptr;
@@ -126,11 +138,11 @@ public:
 		}
 	}
 
-	void setColumnNames(std::vector<std::string>& columnNames) {
+	void setColumnNames(const std::vector<std::string>& columnNames) {
 		columnAmount = static_cast<uint16_t>(columnNames.size());
 		const char** columns = new const char*[columnAmount];
-		for (uint32_t i = 0; i < columnAmount; i++) {
-			std::string& col = columnNames.at(i);
+		for (uint16_t i = 0; i < columnAmount; i++) {
+			const std::string& col = columnNames.at(i);
 			char *ptr = new char[col.length() + 1];
 			strncpy_s(ptr, col.length()+1, col.c_str(), col.length());
 			ptr[col.length()] = 0x00;
@@ -145,7 +157,6 @@ public:
 			ptr = nullptr;
 		});
 	}
-
 	__inline std::shared_ptr<const char*> getColumnNames() const {
 		return columnNames;
 	}
@@ -161,11 +172,46 @@ public:
 	__inline uint32_t getResultAmount() const {
 		return rowAmount;
 	}
+
+	__inline virtual bool hasResult() const {
+		return true;
+	}
+
+	__inline virtual std::shared_ptr<const char> getError() const {
+		return std::shared_ptr<const char>();
+	}
+
+};
+
+class ErrorResultSet : public ResultSet {
+private:
+	std::shared_ptr<const char> lastError;
+public:
+	ErrorResultSet() : ResultSet() {
+	}
+	ErrorResultSet(const char* error) : ErrorResultSet(std::string(error)) {
+	}
+	ErrorResultSet(const std::string& error) {
+		size_t stringLength = error.length();
+		char *errorHolder = new char[stringLength +1];
+		strncpy_s(errorHolder, stringLength + 1, error.c_str(), stringLength);
+		errorHolder[stringLength] = 0x00;
+		lastError = std::shared_ptr<const char>(errorHolder, std::default_delete<char[]>());
+	}
+
+	__inline virtual bool hasResult() const {
+		return false;
+	}
+
+	__inline virtual std::shared_ptr<const char> getError() const {
+		return lastError;
+	}
 };
 
 class Database {
 protected:
 	DatabaseConnectionInformation dbConnectionInformation;
+	ROSELogger logger;
 public:
 	Database(const DatabaseConnectionInformation& dbInformation) {
 		dbConnectionInformation = dbInformation;
@@ -210,11 +256,14 @@ public:
 		return false;
 	}
 
-	virtual int32_t insertQueryWithIdReturn(const char *query, const char* idColumnName) {
+	virtual int64_t insertQueryWithIdReturn(const char *query, const char* idColumnName) {
 		return -1;
 	}
 	__inline virtual const char* getLastError() const {
 		return "";
+	}
+	__inline const DatabaseConnectionInformation getConnectionInformation() const {
+		return dbConnectionInformation;
 	}
 };
 

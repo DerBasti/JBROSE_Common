@@ -5,9 +5,11 @@
 #include <algorithm>
 #include <queue>
 #include "NetworkMessageFragment.h"
+#include "Logger.h"
 
 class NetworkClient {
 private:
+	ROSELogger logger;
 	SOCKET socket;
 	std::shared_ptr<char> ip;
 	bool activeFlag; 

@@ -15,8 +15,9 @@ ROSEServer::ROSEServer(uint16_t port) : NetworkServer(port) {
 	DatabaseConnectionInformation info;
 	info.setPort(5432);
 	info.setUserName("postgres");
-	info.setPassword("Bla12345!");
+	info.setPassword("bla123");
 	info.setDatabaseName("rose_online");
+	logger.logDebug("Database connection to: ", info.getHostName(), ":", info.getPort(), "/", info.getDatabaseName());
 	database = new PostgresDatabase(info);
 }
 
@@ -71,7 +72,7 @@ void ROSEServer::onPrepareDataIncoming(NetworkClient* nc) {
 	if (client) {
 		ROSEMessageHandler *handler = dynamic_cast<ROSEMessageHandler*>(client->getMessageHandler());
 		uint16_t expectedAmountOfBytes = handler->getExpectedAmountOfBytes();
-		//std::cout << "Setting the expected amount of bytes to: " << expectedAmountOfBytes << "\n";
+		logger.logTrace("Setting the expected amount of bytes to: ", expectedAmountOfBytes);
 		nc->setMaxAllowedBytesToReceive(expectedAmountOfBytes);
 	}
 }
@@ -82,7 +83,8 @@ void ROSEServer::onDataReceived(NetworkClient* nc, const NetworkMessageFragment&
 		bool messageSuccessfullyHandled = client->handleIncomingDataFragment(dataHolder);
 		bool packetSuccessfullyHandled = true;
 		if (messageSuccessfullyHandled && client->isPacketQueueFilled()) {
-			std::queue<std::shared_ptr<Packet>> packetQueue = client->getQueuedPackets();
+			std::queue<std::shared_ptr<Packet>> packetQueue = std::move(client->getQueuedPackets());
+			logger.logTrace("Client from ", nc->getIp(), " has ", packetQueue.size(), " packets in queue.");
 			packetSuccessfullyHandled = onPacketsReady(client, packetQueue);
 		}
 		bool everythingSuccessfullyHandled = messageSuccessfullyHandled && packetSuccessfullyHandled;

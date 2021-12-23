@@ -11,13 +11,16 @@ ROSEMessageHandler::ROSEMessageHandler(std::shared_ptr<PacketFactory>& packetFac
 
 
 ROSEMessageHandler::~ROSEMessageHandler() {
+	if (encryptionHandler) {
+		delete encryptionHandler;
+	}
 	encryptionHandler = nullptr;
 }
 
 void ROSEMessageHandler::accept(const NetworkMessageFragment& fragment) {
 	dataHolder.add(fragment.getMessage(), fragment.getLength());
 	expectedAmountOfBytes -= fragment.getLength();
-	//std::cout << "Header of length " << fragment.getLength() << " received.\n";
+	logger.logTrace("Header of length ", fragment.getLength(), " received.");
 	if (dataHolder.getCurrentlyUsedSize() == DEFAULT_HEADERSIZE && !headerReceived) {
 		//std::cout << "Only Header received. Trying to decrypt it...\n";
 		uint16_t newExpectedLengthInTotal = encryptionHandler->decryptHeader((unsigned char*)dataHolder.get());
@@ -38,6 +41,9 @@ void ROSEMessageHandler::accept(const NetworkMessageFragment& fragment) {
 std::shared_ptr<Packet> ROSEMessageHandler::createPacketFromReceivedData() {
 	const char *packetData = (const char*)dataHolder;
 	std::shared_ptr<Packet> p = packetFactory->createPacketFromReceivedData(packetData);
+	if (p) {
+		logger.logTrace("Created packet with ID: ", p->getCommandId());
+	}
 	return p;
 }
 

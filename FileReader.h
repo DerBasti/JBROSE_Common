@@ -6,50 +6,209 @@
 #include <memory>
 #include <type_traits>
 
-class FileReader {
+class DataReader {
 private:
-	FILE * handle;
 	uint64_t caret;
 	uint64_t size;
-	template<class _T, class = typename std::enable_if<std::is_integral<_T>::value || std::is_floating_point<_T>::value>::type>
-	_T read() {
-		_T value;
-		uint8_t typeSize = sizeof(_T);
-		fread(&value, typeSize, 1, handle);
-		caret += typeSize;
-		return value;
-	}
-public:
-	FileReader(const char *path);
-	virtual ~FileReader();
+protected:
+	virtual void onCaretBytesSkipped(const uint64_t bytesSkipped) {
 
-	__inline void skipBytes(const uint64_t amountOfBytes) {
-		_fseeki64(handle, amountOfBytes, SEEK_CUR);
+	}
+	virtual void onCaretAdd(const uint64_t caretPosition, const uint64_t bytesToAdd) {
+
+	}
+	virtual void onCaretReset(const uint64_t newCaretPosition) {
+
+	}
+
+	__inline void setFileSize(const uint64_t size) {
+		this->size = size;
+	}
+
+	virtual void resetCaretToPosition(const uint64_t caretPosition) {
+		onCaretReset(caretPosition);
+		caret = caretPosition;
+	}
+
+	virtual void addToCaret(const uint64_t amountOfBytes) {
+		onCaretAdd(caret, amountOfBytes);
 		caret += amountOfBytes;
 	}
 
-	__inline void setCaret(const uint64_t caretPosition) {
-		_fseeki64(handle, caretPosition, SEEK_SET);
-		caret = caretPosition;
+	virtual void skipBytesForCaret(const uint64_t amountOfBytes) {
+		onCaretBytesSkipped(amountOfBytes);
+		caret += amountOfBytes;
+	}
+public:
+	DataReader() {
+		caret = size = 0;
+	}
+	virtual ~DataReader() {}
+
+	__inline virtual void skipBytes(const uint64_t amountOfBytes) {
+		skipBytesForCaret(amountOfBytes);
 	}
 
 	__inline uint64_t getCaret() const {
 		return caret;
 	}
 
-	__inline uint32_t readUInt() {
+	virtual bool isEndOfFile() const {
+		return true;
+	}
+
+	virtual bool isValid() const {
+		return this->operator bool();
+	}
+
+	virtual operator bool() const {
+		return false;
+	}
+
+	__inline virtual uint32_t readUInt() {
+		return 0;
+	}
+	__inline virtual uint16_t readUShort() {
+		return 0;
+	}
+	__inline virtual uint8_t readByte() {
+		return 0;
+	}
+	__inline virtual float readFloat() {
+		return 0.0f;
+	}
+	__inline virtual double readDouble() {
+		return 0.0;
+	}
+	__inline uint64_t getFileSize() const {
+		return size;
+	}
+	std::shared_ptr<char> readStringWrapped(const uint64_t bytes) {
+		return std::shared_ptr<char>(readString(bytes), std::default_delete<char[]>());
+	}
+	std::shared_ptr<char> readStringWrapped() {
+		return std::shared_ptr<char>(readString(), std::default_delete<char[]>());
+	}
+	virtual char* readString(const uint64_t bytes) {
+		return nullptr;
+	}
+	virtual char* readString() {
+		return nullptr;
+	}
+};
+
+class LoadedDataReader : public DataReader {
+private:
+	const char* dataHolder;
+	template<class _T>
+	const _T readNumerical() {
+		const _T result = *reinterpret_cast<const _T*>(dataHolder);
+		dataHolder += sizeof(_T);
+		addToCaret(sizeof(_T));
+		return result;
+	}
+protected:
+	virtual void onCaretBytesSkipped(const uint64_t bytesSkipped) {
+		dataHolder += bytesSkipped;
+	}
+public:
+	LoadedDataReader(const char* readData) {
+		dataHolder = readData;
+	}
+	virtual ~LoadedDataReader() {
+
+	}
+	__inline virtual uint32_t readUInt() {
+		return readNumerical<uint32_t>();
+	}
+	__inline virtual uint16_t readUShort() {
+		return readNumerical<uint16_t>();
+	}
+	__inline virtual uint8_t readByte() {
+		return readNumerical<uint8_t>();
+	}
+	__inline virtual float readFloat() {
+		return readNumerical<float>();
+	}
+	__inline virtual double readDouble() {
+		return readNumerical<double>();
+	}
+	virtual char* readString(const uint64_t bytes) {
+		char* result = new char[bytes + 1];
+		memcpy(result, dataHolder, bytes);
+		result[bytes] = 0x00;
+		addToCaret(bytes);
+		return result;
+	}
+};
+
+class FileReader : public DataReader {
+private:
+	std::shared_ptr<char> filePath;
+public:
+	FileReader(const char *path);
+	virtual ~FileReader();
+
+	virtual void resetCaretTo(const uint64_t caretPosition) {
+		resetCaretToPosition(caretPosition);
+	}
+
+	virtual std::shared_ptr<char> getFilePath() const {
+		return filePath;
+	}
+};
+
+class FileInputReader : public FileReader {
+private:
+	FILE * fileHandle;
+protected:
+	template<class _T, class = typename std::enable_if<std::is_integral<_T>::value || std::is_floating_point<_T>::value>::type>
+	_T read() {
+		_T value;
+		uint32_t typeSize = sizeof(_T);
+		fread(&value, typeSize, 1, fileHandle);
+		addToCaret(typeSize);
+		return value;
+	}
+
+	virtual void onCaretBytesSkipped(const uint64_t bytesSkipped) {
+		_fseeki64(fileHandle, bytesSkipped, SEEK_CUR);
+	}
+	virtual void onCaretReset(const uint64_t caret) {
+		_fseeki64(fileHandle, caret, SEEK_SET);
+	}
+	virtual void onCaretAdd(const uint64_t caretPosition, const uint64_t bytesToAdd) {
+	}
+public:
+	FileInputReader(const char *filePath);
+	virtual ~FileInputReader();
+	
+	__inline virtual uint32_t readUInt() {
 		return read<uint32_t>();
 	}
-	__inline uint16_t readUShort() {
+	__inline virtual uint16_t readUShort() {
 		return read<uint16_t>();
 	}
-	__inline uint8_t readByte() {
+	__inline virtual uint8_t readByte() {
 		return read<uint8_t>();
 	}
-	__inline float readFloat() {
+	__inline virtual float readFloat() {
 		return read<float>();
 	}
-	std::shared_ptr<char> readString(const uint32_t bytes);
+	__inline virtual double readDouble() {
+		return read<double>();
+	}
+
+	virtual operator bool() const {
+		return fileHandle != nullptr;
+	}
+
+	virtual char* readString(const uint64_t bytes);
+	virtual char* readString();
+
+	__inline virtual bool isEndOfFile() const {
+		return fileHandle == nullptr || getCaret() >= getFileSize();
+	}
 };
 
 #endif //__ROSE_FILE_READER__

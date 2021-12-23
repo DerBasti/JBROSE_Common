@@ -1,5 +1,6 @@
 #pragma once
 #include <mutex>
+#include "Logger.h"
 #include "NetworkClient.h"
 #include "NetworkMessageHandler.h"
 #include "Packet.h"
@@ -11,6 +12,7 @@ private:
 	void onEncryptionOfPacket(const std::string& packetToPrintable, const SendablePacket& packet) const;
 protected:
 	const static uint16_t DEFAULT_HEADERSIZE = 6;
+	ROSELogger logger;
 	std::queue<std::shared_ptr<Packet>> packetQueue;
 	std::mutex packetQueueMutex;
 	NetworkClient* networkInterface;

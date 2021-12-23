@@ -5,6 +5,8 @@
 #include <string>
 #include <functional>
 #include <vector>
+#include <stdio.h>
+#include "FileReader.h"
 
 template<class T, class = typename std::enable_if<std::is_pointer<T>::value == false>::type>
 class Supplier {
@@ -20,54 +22,6 @@ public:
 	}
 	T operator()() const {
 		return supplyingFunction();
-	}
-};
-
-class Packet;
-
-class SendablePacket {
-private:
-	std::shared_ptr<unsigned char> sharedBuffer;
-	uint16_t caret;
-public:
-	SendablePacket(const Packet& packet);
-
-	template<class T>
-	void addData(T value) {
-		uint8_t *buffer = sharedBuffer.get();
-		uint16_t sizeOfT = static_cast<uint16_t>(sizeof(T));
-		memcpy(&buffer[caret], &value, sizeOfT);
-		caret += sizeOfT;
-	}
-
-	void addString(const std::string& str) {
-		addString(str.c_str(), static_cast<uint16_t>(str.length()));
-	}
-
-	void addString(const char *str) {
-		unsigned short stringLength = str != nullptr ? static_cast<unsigned short>(strlen(str)) : 0;
-		addString(str, stringLength);
-	}
-
-	void addString(const char* str, uint16_t stringLength) {
-		uint8_t *buffer = sharedBuffer.get();
-		memcpy(&buffer[caret], str, stringLength);
-		caret += stringLength;
-
-		addData<uint8_t>(0x00);
-	}
-
-	__inline void updatePacketSize() const {
-		uint16_t* packet = (uint16_t*)sharedBuffer.get();
-		*packet = caret;
-	}
-
-	__inline uint16_t getCurrentSize() const {
-		return caret;
-	}
-
-	std::shared_ptr<unsigned char> toSendable() const {
-		return sharedBuffer;
 	}
 };
 
@@ -118,7 +72,58 @@ public:
 	__inline uint16_t getCommandId() const {
 		return commandId;
 	}
-}; 
+	__inline std::shared_ptr<char> getCommandIdAsHex() const {
+		std::shared_ptr<char> cmd = std::shared_ptr<char>(new char[0x10], std::default_delete<char[]>());
+		sprintf_s(cmd.get(), 0x0F, "0x%04x", commandId);
+		return cmd;
+	}
+};
+
+class SendablePacket {
+private:
+	std::shared_ptr<unsigned char> sharedBuffer;
+	uint16_t caret;
+public:
+	SendablePacket(const Packet& packet);
+
+	template<class T, class = typename std::enable_if<std::is_integral<T>::value || std::is_floating_point<T>::value>::type>
+	void addData(T value) {
+		uint8_t *buffer = sharedBuffer.get();
+		uint16_t sizeOfT = static_cast<uint16_t>(sizeof(T));
+		memcpy(&buffer[caret], &value, sizeOfT);
+		caret += sizeOfT;
+	}
+
+	void addString(const std::string& str) {
+		addString(str.c_str(), static_cast<uint16_t>(str.length()));
+	}
+
+	void addString(const char *str) {
+		unsigned short stringLength = str != nullptr ? static_cast<unsigned short>(strlen(str)) : 0;
+		addString(str, stringLength);
+	}
+
+	void addString(const char* str, uint16_t stringLength) {
+		uint8_t *buffer = sharedBuffer.get();
+		memcpy(&buffer[caret], str, stringLength);
+		caret += stringLength;
+
+		addData<uint8_t>(0x00);
+	}
+
+	__inline void updatePacketSize() const {
+		uint16_t* packet = (uint16_t*)sharedBuffer.get();
+		*packet = caret;
+	}
+
+	__inline uint16_t getCurrentSize() const {
+		return caret;
+	}
+
+	std::shared_ptr<unsigned char> toSendable() const {
+		return sharedBuffer;
+	}
+};
 
 class ResponsePacket : public Packet {
 protected:

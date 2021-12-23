@@ -4,6 +4,7 @@
 #include "PacketFactory.h"
 #include "EncryptionHandler.h"
 #include "Packet.h"
+#include "Logger.h"
 
 class ROSEMessageHandler : public NetworkMessageHandler
 {
@@ -14,6 +15,7 @@ private:
 	TrackableAppender<char> dataHolder;
 	bool handlingFinished;
 	bool headerReceived;
+	ROSELogger logger;
 public:
 	ROSEMessageHandler(std::shared_ptr<PacketFactory>& packetFactory);
 	~ROSEMessageHandler();

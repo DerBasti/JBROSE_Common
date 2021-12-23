@@ -34,6 +34,7 @@ private:
 	unsigned int maxFileDescriptors;
 	uint16_t port;
 	std::set<NetworkClient*> clientList;
+	class ROSELogger logger;
 
 	bool startServerConnection();
 	bool bindSocket() const;
