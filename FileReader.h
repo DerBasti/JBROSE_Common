@@ -145,6 +145,7 @@ public:
 class FileReader : public DataReader {
 private:
 	std::shared_ptr<char> filePath;
+	std::shared_ptr<char> absoluteFilePath;
 public:
 	FileReader(const char *path);
 	virtual ~FileReader();
@@ -155,6 +156,9 @@ public:
 
 	virtual std::shared_ptr<char> getFilePath() const {
 		return filePath;
+	}
+	virtual std::shared_ptr<char> getAbsoluteFilePath() const {
+		return absoluteFilePath;
 	}
 };
 
