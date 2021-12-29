@@ -23,7 +23,6 @@ private:
 protected:
 	static std::shared_ptr<CryptTable> ENCRYPTION_TABLE;
 	Database *database;
-	ROSELogger logger;
 
 	virtual void loadEncryption();
 

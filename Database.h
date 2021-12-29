@@ -211,7 +211,7 @@ public:
 class Database {
 protected:
 	DatabaseConnectionInformation dbConnectionInformation;
-	ROSELogger logger;
+	ROSEThreadedLogger logger;
 public:
 	Database(const DatabaseConnectionInformation& dbInformation) {
 		dbConnectionInformation = dbInformation;

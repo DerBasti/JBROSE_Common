@@ -10,7 +10,7 @@ class PacketFactory
 private:
 	std::unordered_map<uint16_t, std::function<std::shared_ptr<Packet>(const Packet&)> > commandToPacketSupplierMap;
 protected:
-	ROSELogger logger;
+	ROSEThreadedLogger logger;
 	template<class T, class = typename std::enable_if<std::is_base_of<Packet, T>::value>::type>
 	__inline void addCommand(uint16_t command) {
 		commandToPacketSupplierMap.insert(std::make_pair(command, [](const Packet& p) {

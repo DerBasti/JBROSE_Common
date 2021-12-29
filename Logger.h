@@ -9,13 +9,24 @@
 #include <chrono>
 #include <mutex>
 #include <ctime>
+#include <queue>
+
+enum class LogLevelTextColorSchema : uint8_t {
+	DEFAULT = 7,
+	GREEN = 10,
+	BLUE = 11,
+	RED = 12,
+	ORANGE = 14,
+	WHITE = 15
+};
 
 class LogLevel {
 private:
 	const char* name;
 	uint8_t importance;
 	uint8_t colorScheme;
-	constexpr LogLevel(const char* name, uint8_t urgency, uint8_t colorSchema) : name(name), importance(urgency), colorScheme(colorSchema) {}
+	constexpr LogLevel(const char* name, uint8_t urgency, const LogLevelTextColorSchema& colorSchema) : LogLevel(name, urgency, static_cast<uint8_t>(colorSchema)) {}
+	constexpr LogLevel(const char* name, uint8_t urgency, const uint8_t colorSchema) : name(name), importance(urgency), colorScheme(colorSchema) {}
 public:
 	const static LogLevel* TRACE;
 #ifdef DEBUG
@@ -31,8 +42,6 @@ public:
 #endif
 	const static LogLevel* ERROR;
 	const static LogLevel* DEFAULT_LOGLEVEL;
-
-	const static uint8_t DEFAULT_COLOR_SCHEME;
 
 	virtual ~LogLevel() {
 
@@ -107,7 +116,8 @@ private:
 		std::wcout << "\n";
 	}
 
-	void colorizeLogLevelOutput(const LogLevel* level) const;
+protected:
+	static void colorizeLogLevelOutput(const LogLevel* level);
 public:
 	ROSELogger();
 	ROSELogger(const LogLevel* newLevel) : level(newLevel) {}
@@ -153,6 +163,127 @@ public:
 	}
 	__inline void setLoggerName(const char* name) {
 		this->loggerName = (name == nullptr ? std::string() : std::string(name));
+	}
+};
+
+class ROSEThreadedLogger : public ROSELogger {
+private:
+	struct LogMessage {
+		std::wstringstream output;
+		const LogLevel* level;
+		std::string loggerName;
+	};
+	static std::mutex inputMutex;
+	static std::thread loggerThread;
+	static std::queue<LogMessage> streamHolder;
+
+	template<typename Arg>
+	void logNext(std::wstringstream& wout, Arg arg) const {
+		wout << arg;
+	}
+
+	template<>
+	void logNext(std::wstringstream& wout, std::string str) const {
+		wout << str.c_str();
+	}
+	template<>
+	void logNext(std::wstringstream& wout, std::wstring str) const {
+		wout << str.c_str();
+	}
+
+	template<typename NextType, typename... Arg>
+	void logNext(std::wstringstream& wout, NextType current, Arg... arg) const {
+		logNext(wout, current);
+		logNext(wout, arg...);
+	}
+	template<typename... Args>
+	void log(const LogLevel* level, Args... args) const {
+		if (*level < *(getLogLevel())) {
+			return;
+		}
+		std::wstringstream output;
+		logNext(output, args...);
+		output << "\n";
+		std::lock_guard<std::mutex> lock(inputMutex);
+		LogMessage message{ std::move(output), level, getLoggerName()};
+		streamHolder.push(std::move(message));
+	}
+
+	static void printHeader(const LogMessage& message) {
+		time_t currentTime;
+		time(&currentTime);
+		tm localTime;
+		localtime_s(&localTime, &currentTime);
+		std::stringstream stream;
+		stream << std::put_time(&localTime, "%H:%M:%S");
+
+		auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()) % 1000;
+		stream << '.' << std::setfill('0') << std::setw(3) << ms.count();
+		std::wcout << "[" << stream.str().c_str() << "][";
+		colorizeLogLevelOutput(message.level);
+		std::wcout << "]";
+		if (!message.loggerName.empty()) {
+			std::wcout << "[" << message.loggerName.c_str() << "]";
+		}
+		std::wcout << " ";
+	}
+public:
+	ROSEThreadedLogger();
+	ROSEThreadedLogger(const LogLevel* newLevel) : ROSELogger(newLevel) {}
+	virtual ~ROSEThreadedLogger() {}
+
+	static void init() {
+		loggerThread = std::thread([&]() {
+			streamHolder = std::queue<LogMessage>();
+			while (true) {
+				if (streamHolder.empty()) {
+					std::this_thread::sleep_for(std::chrono::milliseconds(1));
+				}
+				else {
+					std::queue<LogMessage> copy;
+					{
+						std::lock_guard<std::mutex> lock(inputMutex);
+						copy = std::move(streamHolder);
+						streamHolder = std::queue<LogMessage>();
+					}
+					while(!copy.empty()) {
+						const LogMessage& messageEntry = copy.front();
+						printHeader(messageEntry);
+						std::wcout << messageEntry.output.str().c_str();
+						copy.pop();
+					}
+				}
+			}
+		});
+	}
+
+	template<typename... Args>
+	__inline void logTrace(Args... args) const {
+#ifdef _DEBUG
+		log(LogLevel::TRACE, args...);
+#endif
+	}
+
+	template<typename... Args>
+	__inline void logDebug(Args... args) const {
+#ifdef _DEBUG
+		log(LogLevel::DEBUG, args...);
+#endif
+	}
+
+	template<typename... Args>
+	__inline void logInfo(Args... args) const {
+		log(LogLevel::INFO, args...);
+	}
+
+	template<typename... Args>
+	__inline void logWarn(Args... args) const {
+		log(LogLevel::WARNING, args...);
+	}
+
+	template<typename... Args>
+	__inline void logError(Args... args) const {
+		log(LogLevel::ERROR, args...);
 	}
 };
 
