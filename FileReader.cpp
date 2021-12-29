@@ -1,11 +1,19 @@
 #include "FileReader.h"
+#ifdef _WIN32
+#include <Windows.h>
+#endif
 
 FileReader::FileReader(const char *path) {
 	int filePathLength = path == nullptr ? 0 : static_cast<int>(strlen(path));
 	char *pathHolder = new char[filePathLength + 1];
-	strncpy_s(pathHolder, filePathLength+1, (path == nullptr ? "" : path), filePathLength);
+	strncpy_s(pathHolder, filePathLength + 1, (path == nullptr ? "" : path), filePathLength);
 	pathHolder[filePathLength] = 0x00;
 	this->filePath = std::shared_ptr<char>(std::move(pathHolder), std::default_delete<char[]>());
+#ifdef _WIN32
+	char* absolutePathHolder = new char[0x200];
+	GetFullPathNameA(path, 0x200, absolutePathHolder, nullptr);
+	this->absoluteFilePath = std::shared_ptr<char>(std::move(absolutePathHolder), std::default_delete<char[]>());
+#endif
 }
 
 FileReader::~FileReader() {
