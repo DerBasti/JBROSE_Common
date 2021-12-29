@@ -9,7 +9,7 @@
 
 class NetworkClient {
 private:
-	ROSELogger logger;
+	ROSEThreadedLogger logger;
 	SOCKET socket;
 	std::shared_ptr<char> ip;
 	bool activeFlag; 
