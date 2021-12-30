@@ -72,7 +72,7 @@ public:
 		dataHolder.reserve(columnCount);
 		for (uint16_t i = 0; i < columnCount; i++, data++) {
 			std::string columnData = (*data) == nullptr ? std::string() : std::string(*data);
-			dataHolder.push_back(columnData);
+			dataHolder.push_back(std::move(columnData));
 		}
 	}
 
