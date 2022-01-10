@@ -126,10 +126,11 @@ protected:
 	virtual std::vector<std::string> parseDirectoryRecursively(const std::string& path) const {
 		WIN32_FIND_DATAA ffd = { 0x00 };
 		std::vector<std::string> result;
-		HANDLE handle = FindFirstFileA((path + std::string("\\*")).c_str(), &ffd);
+		std::string realPath = path.at(path.length() - 1) == '\\' ? path : (path + std::string("\\"));
+		HANDLE handle = FindFirstFileA((realPath + std::string("\\*")).c_str(), &ffd);
 		do {
 			if (ffd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-				std::string subPath = path + std::string("\\") + std::string(ffd.cFileName);
+				std::string subPath = realPath + std::string(ffd.cFileName);
 				if (subPath.find_last_of(".") != subPath.length() - 1) {
 					std::vector<std::string> subfiles = parseDirectoryRecursively(subPath);
 					result.insert(result.end(), subfiles.begin(), subfiles.end());
@@ -138,7 +139,7 @@ protected:
 			else {
 				std::string fileName = std::string(ffd.cFileName);
 				if (!isFileExtensionSet() || isFileExtensionMatching(fileName)) {
-					result.push_back(path + std::string("\\") + std::string(ffd.cFileName));
+					result.push_back(realPath + std::string(ffd.cFileName));
 				}
 			}
 		} while (FindNextFileA(handle, &ffd) != 0);
