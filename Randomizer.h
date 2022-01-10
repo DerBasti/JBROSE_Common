@@ -116,9 +116,9 @@ public:
 	__inline void setBoundriesAndWeights(_NumericType minimum, _NumericType maximum, std::vector<double> newWeights) {
 		this->setMinimum(minimum);
 		this->setMaximum(maximum);
-		setNewWeights(newWeights);
+		setNewWeightDistribution(newWeights);
 	}
-	__inline void setNewWeights(std::vector<double> newWeights) {
+	__inline void setNewWeightDistribution(std::vector<double> newWeights) {
 		this->weights = newWeights;
 		this->onNewMinimumAndMaximum();
 	}
