@@ -43,15 +43,27 @@ public:
 
 class WrappingUInt : public WrappingNumeric<uint32_t> {
 public:
-	WrappingUInt() : WrappingUInt(-1) {}
+	WrappingUInt() : WrappingUInt(-1) {
+	
+	}
+
 	WrappingUInt(uint32_t maximum) : WrappingNumeric<uint32_t>(maximum) {
 
 	}
-	virtual ~WrappingUInt() {}
+
+	virtual ~WrappingUInt() {
+	
+	}
 
 	__inline WrappingUInt& operator++(int) {
 		setCurrentValue(getCurrentValue() + 1);
 		return (*this);
+	}
+
+	__inline WrappingUInt operator++() {
+		WrappingUInt temp = (*this);
+		(*this)++;
+		return temp;
 	}
 };
 
