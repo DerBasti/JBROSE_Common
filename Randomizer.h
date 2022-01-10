@@ -113,7 +113,7 @@ public:
 	__inline std::vector<_NumericType> getWeights() const {
 		return weights;
 	}
-	__inline void setBoundriesAndWeights(_NumericType minimum, _NumericType maximum, std::vector<double> newWeights) {
+	__inline void setBoundriesAndWeightDistribution(_NumericType minimum, _NumericType maximum, std::vector<double> newWeights) {
 		this->setMinimum(minimum);
 		this->setMaximum(maximum);
 		setNewWeightDistribution(newWeights);
