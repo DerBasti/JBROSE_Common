@@ -140,6 +140,17 @@ public:
 		addToCaret(bytes);
 		return result;
 	}
+	virtual char* readString() {
+		std::string result = std::string();
+		char currentChar = 0x00;
+		while ((currentChar = static_cast<char>(readByte())) != 0x00 && getCaret() < getFileSize()) {
+			result += currentChar;
+		}
+		char *dataHolder = new char[result.length() + 1];
+		strncpy_s(dataHolder, result.length() + 1, result.c_str(), result.length());
+		dataHolder[result.length()] = 0x00;
+		return dataHolder;
+	}
 };
 
 class FileReader : public DataReader {
