@@ -44,12 +44,8 @@ private:
 	std::chrono::steady_clock clock;
 	std::chrono::time_point<std::chrono::steady_clock> timestamp;
 protected:
-	__inline std::chrono::time_point<std::chrono::steady_clock> getCurrentTimeInChronoMillis() const {
+	__inline std::chrono::time_point<std::chrono::steady_clock> getCurrentTimepointInChronoMillis() const {
 		return clock.now();
-	}
-	__inline uint64_t getCurrentTimeInMillis() const {
-		std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds>(clock.now().time_since_epoch());
-		return ms.count();
 	}
 public:
 	Timer() {
@@ -57,19 +53,24 @@ public:
 	}
 	virtual ~Timer() { }
 
+	__inline static uint64_t getCurrentTimepointInMillis() {
+		std::chrono::milliseconds ms = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now().time_since_epoch());
+		return ms.count();
+	}
+
 	__inline void setTimestamp(uint64_t newTimestamp) {
 		timestamp = std::chrono::time_point<std::chrono::steady_clock, std::chrono::milliseconds>(std::chrono::milliseconds(newTimestamp));
 	}
 	virtual uint64_t getPassedTimeInMillis() const {
-		return std::chrono::duration_cast<std::chrono::milliseconds>(getCurrentTimeInChronoMillis() - timestamp).count();
+		return std::chrono::duration_cast<std::chrono::milliseconds>(getCurrentTimepointInChronoMillis() - timestamp).count();
 	}
 	virtual uint64_t updateTimestamp() {
 		uint64_t result = getPassedTimeInMillis();
-		timestamp = getCurrentTimeInChronoMillis();
+		timestamp = getCurrentTimepointInChronoMillis();
 		return result;
 	}
 	__inline void setTimestampToCurrentTimepoint() {
-		timestamp = getCurrentTimeInChronoMillis();
+		timestamp = getCurrentTimepointInChronoMillis();
 	}
 };
 
@@ -94,7 +95,7 @@ public:
 		uint64_t timePassed = getPassedTimeInMillis();
 		if (timePassed >= timeInMillisTillWrap) {
 			onTimeWrap();
-			setTimestamp(getCurrentTimeInMillis() - timePassed + timeInMillisTillWrap);
+			setTimestamp(getCurrentTimepointInMillis() - timePassed + timeInMillisTillWrap);
 		}
 		return timePassed;
 	}

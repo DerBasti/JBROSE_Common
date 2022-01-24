@@ -63,10 +63,6 @@ void ROSEServer::onROSEClientDisconnecting(std::shared_ptr<ROSEClient>& client) 
 	//TODO
 }
 
-bool ROSEServer::onPacketsReady(std::shared_ptr<ROSEClient>& client, std::queue<std::shared_ptr<Packet>>& packetQueue) {
-	return true;
-}
-
 void ROSEServer::onPrepareDataIncoming(NetworkClient* nc) {
 	std::shared_ptr<ROSEClient> client = findROSEClientByInterface(nc);
 	if (client) {
@@ -90,4 +86,8 @@ void ROSEServer::onDataReceived(NetworkClient* nc, const NetworkMessageFragment&
 		bool everythingSuccessfullyHandled = messageSuccessfullyHandled && packetSuccessfullyHandled;
 		nc->setIsActive(everythingSuccessfullyHandled);
 	}
+}
+
+bool ROSEServer::onPacketsReady(std::shared_ptr<ROSEClient>& client, std::queue<std::shared_ptr<Packet>>& packetQueue) {
+	return true;
 }

@@ -67,6 +67,21 @@ public:
 };
 
 class ROSELogger {
+protected:
+	class ROSELoggerHexValue {
+	private:
+		uint64_t value;
+	public:
+		ROSELoggerHexValue(uint64_t value) {
+			this->value = value;
+		}
+		virtual ~ROSELoggerHexValue() {
+
+		}
+		__inline uint64_t getValue() const {
+			return value;
+		}
+	};
 private:
 	const LogLevel* level;
 	std::string loggerName;
@@ -80,6 +95,12 @@ private:
 	void logNext(std::string str) const {
 		std::wcout << str.c_str();
 	}
+
+	template<>
+	void logNext(ROSELoggerHexValue value) const {
+		std::wcout << std::hex << value.getValue() << std::dec;
+	}
+
 	template<>
 	void logNext(std::wstring str) const {
 		std::wcout << str.c_str();
@@ -90,6 +111,7 @@ private:
 		logNext(current);
 		logNext(arg...);
 	}
+
 	template<typename... Args>
 	void log(const LogLevel* level, Args... args) const {
 		if (*level < *(getLogLevel())) {
@@ -118,6 +140,7 @@ private:
 
 protected:
 	static void colorizeLogLevelOutput(const LogLevel* level);
+
 public:
 	ROSELogger();
 	ROSELogger(const LogLevel* newLevel) : level(newLevel) {}
@@ -152,6 +175,10 @@ public:
 		log(LogLevel::ERROR, args...);
 	}
 
+	static ROSELoggerHexValue asHex(uint32_t value) {
+		return ROSELoggerHexValue(value);
+	}
+
 	__inline const LogLevel* getLogLevel() const {
 		return level;
 	}
@@ -173,6 +200,7 @@ private:
 		const LogLevel* level;
 		std::string loggerName;
 	};
+
 	static std::mutex inputMutex;
 	static std::thread loggerThread;
 	static std::queue<LogMessage> streamHolder;
@@ -185,6 +213,10 @@ private:
 	template<>
 	void logNext(std::wstringstream& wout, std::string str) const {
 		wout << str.c_str();
+	}
+	template<>
+	void logNext(std::wstringstream& wout, ROSELogger::ROSELoggerHexValue value) const {
+		wout << std::hex << value.getValue() << std::dec;
 	}
 	template<>
 	void logNext(std::wstringstream& wout, std::wstring str) const {
@@ -255,6 +287,10 @@ public:
 				}
 			}
 		});
+	}
+
+	static ROSELoggerHexValue asHex(uint32_t value) {
+		return ROSELoggerHexValue(value);
 	}
 
 	template<typename... Args>
